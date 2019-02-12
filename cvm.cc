@@ -49,7 +49,7 @@ double ground_state(MPS & psi, MPO H)
 
 MPS conj_gradient(MPO H, complex<double> z, MPS b)
 {
-    auto x = MPS(sites);
+    auto x = b; // initialize |x> with |b> to iteratively solve A|x> = |b>
     MPS r_old = sum(b, -1 * sum(applyMPO(H, x, args), -z * x, args));
     MPS p = r_old;
     MPS r_new;
@@ -59,7 +59,8 @@ MPS conj_gradient(MPO H, complex<double> z, MPS b)
     MPS tmp1;
     MPS tmp2;
 
-    do{
+    for(int i = 0; i < 10; ++i){
+
         tmp1 = sum(applyMPO(H, r_old, args),  -z * r_old, args);
         alpha = overlapC(r_old, tmp1) / overlapC(Ap, Ap);
         x = sum(x, alpha * p, args);
@@ -72,7 +73,7 @@ MPS conj_gradient(MPO H, complex<double> z, MPS b)
 
         Print(norm(r_old));
 
-    }while(abs(norm(r_old) - 1) > 1E-3); // Will be close to 1 once the algorithm has converged, since MPS are normalized.
+    }//while(abs(norm(r_old) - 1) > 1E-3);
 
 
     return x;
@@ -85,16 +86,26 @@ int main()
     auto H = Hamiltonian();
     auto energy = ground_state(psi, H);
 
-    Print(overlap(psi, H, psi));
-
-    const double omega = 0.5;
-    const double eta = 0.1;
+    const double omega = 0.0;
+    const double eta = 0.01;
     const complex<double> z(energy + omega, eta);
 
 //  Solve (H - z)|x> = c|Gs> by iteratively solving A|x> = b
 
-//  auto b = psi.op("S+", 0);
-    auto x = conj_gradient(H, z, psi);
+    int i = 5;
+    int j = 5;
+
+
+    auto b = psi;
+    b.position(i);
+    b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
+    auto x = conj_gradient(H, z, b);
+    auto c_x = x;
+    c_x.position(j);
+    c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
+    double G = overlap(psi, c_x);
+
+    Print(G);
 
     return 0;
 }
