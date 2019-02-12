@@ -74,6 +74,7 @@ MPS conj_gradient(MPO H, complex<double> z, MPS b)
 
     }while(abs(norm(r_old) - 1) > 1E-3); // Will be close to 1 once the algorithm has converged, since MPS are normalized.
 
+
     return x;
 }
 
