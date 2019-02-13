@@ -3,14 +3,17 @@
 #include <iostream>
 #include <complex>
 #include <stdlib.h>
+#include <math.h>
 
 using namespace itensor;
 using namespace std;
 
 const int N = 5;
 const int maxm = 50;
-const double cut = 1E-6;
-auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
+const double cut = 1E-10;
+// auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
+
+auto sites = SpinOne(N);
 
 
 auto args = Args({"Maxm", maxm, "Cutoff", cut});
@@ -18,7 +21,7 @@ auto args = Args({"Maxm", maxm, "Cutoff", cut});
 
 MPO Hamiltonian()
 {
-    double U = 1.0;
+/*    double U = 1.0;
     double t = 1.0;
 
     auto ampo = AutoMPO (sites);
@@ -33,6 +36,15 @@ MPO Hamiltonian()
         ampo += -t,"Cdagup",b+1,"Cup",b;
         ampo += -t,"Cdagdn",b,"Cdn",b+1;
         ampo += -t,"Cdagdn",b+1,"Cdn",b;
+    }
+    return MPO(ampo);*/
+
+    auto ampo = AutoMPO(sites);
+    for(int j = 1; j < N; ++j)
+    {
+        ampo += "Sz",j,"Sz",j+1;
+        ampo += 0.5,"S+",j,"S-",j+1;
+        ampo += 0.5,"S-",j,"S+",j+1;
     }
     return MPO(ampo);
 }
@@ -62,7 +74,7 @@ MPS conjugate_gradient_squared(MPO H, complex<double> z, MPS b)
     complex<double> beta;
     MPS u_q;
 
-    Print(overlapC(r_old, r_));
+    // Print(overlapC(r_old, r_));
 
     for(int i = 0; i < 10; ++i){
 
@@ -77,7 +89,7 @@ MPS conjugate_gradient_squared(MPO H, complex<double> z, MPS b)
         p = sum(u, beta * sum(q, beta * p, args), args);
         r_old = r_new;
 
-        Print(sqrt(overlapC(r_old, r_old)));
+        Print(norm(r_old));
 
     }//while(abs(norm(r_old) - 1) > 1E-3);
 
@@ -91,11 +103,11 @@ int main()
     auto H = Hamiltonian();
     auto energy = ground_state(psi, H);
 
-    Print(energy);
+    // Print(energy);
 
-    const double omega = 0.5;
-    const double eta = 0.1;
-    const complex<double> z(energy + omega, eta);
+    const double omega = 0;
+    const double eta = 0.01;
+    const complex<double> z(omega - energy, eta);
 
 //  Solve (H - z)|x> = c|Gs> by iteratively solving A|x> = b
 
@@ -105,17 +117,20 @@ int main()
     // c_dagger |Gs>
     auto b = psi;
     b.position(i);
-    b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
+    // b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
+    b.setA(i, (b.A(i) * sites.op("S-", i)).noprime());
 
     auto x = conjugate_gradient_squared(H, z, b);
 
     // c |x>
     auto c_x = x;
     c_x.position(j);
-    c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
-    double G = overlap(psi, c_x);
+    // c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
+    c_x.setA(j, (c_x.A(j) * sites.op("S+", j)).noprime());
 
-    Print(G);
+    complex<double> G = overlapC(psi, c_x);
+    double A = - G.imag() / M_PI;
+    Print(A);
 
     return 0;
 }
