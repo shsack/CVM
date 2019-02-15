@@ -49,6 +49,15 @@ MPO Hamiltonian()
     return MPO(ampo);
 }
 
+MPO Sz(int i)
+{
+    auto ampo = AutoMPO(sites);
+    ampo += "Sz", i;
+    return MPO(ampo);
+}
+
+
+
 double ground_state(MPS & psi, MPO H)
 {
     auto sweeps = Sweeps(5);
@@ -115,21 +124,23 @@ int main()
     int j = 2;
 
     // c_dagger |Gs>
-    auto b = psi;
-    b.position(i);
+    auto b = applyMPO(Sz(i), psi, args);
+    // b.position(i);
     // b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
-    b.setA(i, (b.A(i) * sites.op("Sz", i)).noprime());
+    // b.setA(i, (b.A(i) * sites.op("Sz", i)).noprime());
     // Make MPO instead
 
     auto x = conjugate_gradient_squared(H, z, b);
 
     // c |x>
-    auto c_x = x;
-    c_x.position(j);
+    // auto c_x = x;
+    // c_x.position(j);
     // c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
-    c_x.setA(j, (c_x.A(j) * sites.op("Sz", j)).noprime());
+    // c_x.setA(j, (c_x.A(j) * sites.op("Sz", j)).noprime());
 
-    complex<double> G = overlapC(psi, c_x);
+    x = applyMPO(Sz(j), x, args);
+
+    complex<double> G = overlapC(psi, x);
     cout << G << endl;
     double A = - G.imag() / M_PI;
     Print(A);
