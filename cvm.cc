@@ -8,12 +8,12 @@
 using namespace itensor;
 using namespace std;
 
-const int N = 5;
+const int N = 7;
 const int maxm = 50;
 const double cut = 1E-10;
 // auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
 
-auto sites = SpinOne(N);
+auto sites = SpinHalf(N);
 
 
 auto args = Args({"Maxm", maxm, "Cutoff", cut});
@@ -105,20 +105,21 @@ int main()
 
     // Print(energy);
 
-    const double omega = 0;
+    const double omega = 1.;
     const double eta = 0.01;
     const complex<double> z(omega - energy, eta);
 
 //  Solve (H - z)|x> = c|Gs> by iteratively solving A|x> = b
 
     int i = 1;
-    int j = 1;
+    int j = 2;
 
     // c_dagger |Gs>
     auto b = psi;
     b.position(i);
     // b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
-    b.setA(i, (b.A(i) * sites.op("S-", i)).noprime());
+    b.setA(i, (b.A(i) * sites.op("Sz", i)).noprime());
+    // Make MPO instead
 
     auto x = conjugate_gradient_squared(H, z, b);
 
@@ -126,9 +127,10 @@ int main()
     auto c_x = x;
     c_x.position(j);
     // c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
-    c_x.setA(j, (c_x.A(j) * sites.op("S+", j)).noprime());
+    c_x.setA(j, (c_x.A(j) * sites.op("Sz", j)).noprime());
 
     complex<double> G = overlapC(psi, c_x);
+    cout << G << endl;
     double A = - G.imag() / M_PI;
     Print(A);
 
