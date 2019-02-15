@@ -9,8 +9,8 @@ using namespace itensor;
 using namespace std;
 
 const int N = 7;
-const int maxm = 50;
-const double cut = 1E-10;
+const int maxm = 100;
+const double cut = 1E-6;
 // auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
 
 auto sites = SpinHalf(N);
@@ -60,8 +60,8 @@ MPO Sz(int i)
 
 double ground_state(MPS & psi, MPO H)
 {
-    auto sweeps = Sweeps(5);
-    sweeps.maxm() = 10, 20, 50; //gradually increase states kept
+    auto sweeps = Sweeps(10);
+    sweeps.maxm() = 10, 20, 50, 70; //gradually increase states kept
     sweeps.cutoff() = cut; //desired truncation error
 
     return dmrg(psi, H, sweeps, "Quiet");
@@ -85,7 +85,7 @@ MPS conjugate_gradient_squared(MPO H, complex<double> z, MPS b)
 
     // Print(overlapC(r_old, r_));
 
-    for(int i = 0; i < 10; ++i){
+    for(int i = 0; i < 50; ++i){
 
         Ap = sum(applyMPO(H, p, args), -z * p, args);
         alpha = overlapC(r_old, r_) / overlapC(Ap, r_);
@@ -98,12 +98,22 @@ MPS conjugate_gradient_squared(MPO H, complex<double> z, MPS b)
         p = sum(u, beta * sum(q, beta * p, args), args);
         r_old = r_new;
 
-        Print(norm(r_old));
+    }
 
-    }//while(abs(norm(r_old) - 1) > 1E-3);
+    cout << "\nResidue = " << norm(r_old) << endl;
 
     return x;
 }
+
+double spectral_function(MPS psi, MPO H, MPO (*Sz)(int), double omega, double eta, complex<double> z, int i, int j)
+{
+    auto x = conjugate_gradient_squared(H, z, applyMPO(Sz(j), psi, args));
+    complex<double> G = overlapC(psi, applyMPO(Sz(i), x, args));
+
+    return - G.imag() / M_PI;
+};
+
+
 
 
 int main()
@@ -112,38 +122,15 @@ int main()
     auto H = Hamiltonian();
     auto energy = ground_state(psi, H);
 
-    // Print(energy);
+    const double omega = 0.;
+    const double eta = 0.1;
+    const complex<double> z(omega + energy, -eta);
 
-    const double omega = 1.;
-    const double eta = 0.01;
-    const complex<double> z(omega - energy, eta);
+    int i = 2;
+    int j = 3;
 
-//  Solve (H - z)|x> = c|Gs> by iteratively solving A|x> = b
-
-    int i = 1;
-    int j = 2;
-
-    // c_dagger |Gs>
-    auto b = applyMPO(Sz(i), psi, args);
-    // b.position(i);
-    // b.setA(i, (b.A(i) * sites.op("Cdagup", i)).noprime());
-    // b.setA(i, (b.A(i) * sites.op("Sz", i)).noprime());
-    // Make MPO instead
-
-    auto x = conjugate_gradient_squared(H, z, b);
-
-    // c |x>
-    // auto c_x = x;
-    // c_x.position(j);
-    // c_x.setA(j, (c_x.A(j) * sites.op("Cdn", j)).noprime());
-    // c_x.setA(j, (c_x.A(j) * sites.op("Sz", j)).noprime());
-
-    x = applyMPO(Sz(j), x, args);
-
-    complex<double> G = overlapC(psi, x);
-    cout << G << endl;
-    double A = - G.imag() / M_PI;
-    Print(A);
+    double A = spectral_function(psi, H, Sz, omega, eta, z, i, j);
+    cout << "\nA = " << A << endl;
 
     return 0;
 }
