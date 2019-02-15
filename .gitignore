@@ -32,4 +32,4 @@ lease enter the commit message for your changes. Lines startinsites
 *.app
 
 # Idea
-.idea
+.idea/
