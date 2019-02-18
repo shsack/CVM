@@ -1,6 +1,7 @@
 #include "itensor/all.h"
 #include "cvmclass.h"
 #include <iostream>
+#include <fstream>
 #include <complex>
 #include <stdlib.h>
 #include <math.h>
@@ -134,10 +135,22 @@ int main(int argc, char* argv[]) {
     int j = 3;
 
     double A = spectral_function(psi, H, Sz, omega, eta, energy, iter, i, j);
-
+/*
     std::cout << "\nomega = " << omega << std::endl;
     std::cout << "\neta = " << eta << std::endl;
     std::cout << "\nA = " << A << std::endl;
+
+*/
+
+    std::string str = std::to_string (omega);
+    str.erase ( str.find_last_not_of('0') + 2, std::string::npos );
+
+
+    Print(omega);
+    std::ofstream myfile;
+    myfile.open("data/cvm_" + str + ".txt");
+    myfile << A << std::endl;
+    myfile.close();
 
     return 0;
 }
