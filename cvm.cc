@@ -5,6 +5,8 @@
 #include <complex>
 #include <stdlib.h>
 #include <math.h>
+#include <iomanip>
+
 
 using namespace itensor;
 
@@ -143,12 +145,13 @@ int main(int argc, char* argv[]) {
 */
 
     std::string str = std::to_string (omega);
-    str.erase ( str.find_last_not_of('0') + 2, std::string::npos );
+    str.erase ( str.find('.') + 2, std::string::npos );
 
 
-    Print(omega);
+    // Print(omega);
     std::ofstream myfile;
     myfile.open("data/cvm_" + str + ".txt");
+
     myfile << A << std::endl;
     myfile.close();
 
