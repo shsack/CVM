@@ -113,11 +113,11 @@ MPS conjugate_gradient_squared(MPO A, MPS b, int iter) {
 double spectral_function(MPS psi, MPO H, MPO (*Sx)(int), double omega, double eta, double energy, int iter, int i, int j) {
 
     const std::complex<double> z(omega + energy, eta);
-    auto A = sum(H, -z * I(), args);
+    auto A = sum(z * I(), -1 * H, args);
     auto b =  applyMPO(Sx(j), psi, args);
     auto x = conjugate_gradient_squared(A, b, iter);
 
-    std::complex<double> G = overlapC(psi, applyMPO(Sx(i), x, args));
+    std::complex<double> G = overlapC(psi, Sx(i), x);
 
     return G.imag() / M_PI;
 };
