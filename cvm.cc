@@ -10,7 +10,7 @@
 
 using namespace itensor;
 
-const int N = 6;
+const int N = 3;
 const int maxm = 100;
 const double cut = 1E-6;
 // auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
@@ -50,9 +50,9 @@ MPO Hamiltonian() {
     return MPO(ampo);
 }
 
-MPO Sz(int i) {
+MPO Sx(int i) {
     auto ampo = AutoMPO(sites);
-    ampo += "Sz", i;
+    ampo += "Sx", i;
     return MPO(ampo);
 }
 
@@ -110,14 +110,14 @@ MPS conjugate_gradient_squared(MPO A, MPS b, int iter) {
     return x;
 }
 
-double spectral_function(MPS psi, MPO H, MPO (*Sz)(int), double omega, double eta, double energy, int iter, int i, int j) {
+double spectral_function(MPS psi, MPO H, MPO (*Sx)(int), double omega, double eta, double energy, int iter, int i, int j) {
 
     const std::complex<double> z(omega + energy, eta);
     auto A = sum(H, -z * I(), args);
-    auto b =  applyMPO(Sz(j), psi, args);
+    auto b =  applyMPO(Sx(j), psi, args);
     auto x = conjugate_gradient_squared(A, b, iter);
 
-    std::complex<double> G = overlapC(psi, applyMPO(Sz(i), x, args));
+    std::complex<double> G = overlapC(psi, applyMPO(Sx(i), x, args));
 
     return G.imag() / M_PI;
 };
@@ -131,12 +131,11 @@ int main(int argc, char* argv[]) {
 
     const double omega = std::atof(argv[1]);
     const double eta = std::atof(argv[2]);
-    const int iter = std::atoi(argv[3]);
+    const unsigned int iter = std::atoi(argv[3]);
+    const unsigned int i = std::atoi(argv[4]);
+    const unsigned int j = std::atoi(argv[5]);
 
-    int i = 2;
-    int j = 3;
-
-    double A = spectral_function(psi, H, Sz, omega, eta, energy, iter, i, j);
+    double A = spectral_function(psi, H, Sx, omega, eta, energy, iter, i, j);
 /*
     std::cout << "\nomega = " << omega << std::endl;
     std::cout << "\neta = " << eta << std::endl;
@@ -144,13 +143,14 @@ int main(int argc, char* argv[]) {
 
 */
 
-    std::string str = std::to_string (omega);
+/*    std::string str = std::to_string (omega);
     str.erase ( str.find('.') + 2, std::string::npos );
+*/
 
 
     // Print(omega);
     std::ofstream myfile;
-    myfile.open("data/cvm_" + str + ".txt");
+    myfile.open("data/cvm_" + std::to_string(omega) + ".txt");
 
     myfile << A << std::endl;
     myfile.close();
