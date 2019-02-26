@@ -1,5 +1,5 @@
 #include "itensor/all.h"
-#include "cvmclass.h"
+// #include "cvm.h"
 #include <iostream>
 #include <fstream>
 #include <complex>
@@ -10,9 +10,9 @@
 
 using namespace itensor;
 
-const int N = 3;
-const int maxm = 1000;
-const double cut = 1E-13;
+const int N = 7;
+const int maxm = 30;
+const double cut = 1E-6;
 // auto sites = Hubbard(N, {"ConserveNf", false}); // Define Hubbard model
 
 auto sites = SpinHalf(N);
@@ -74,7 +74,7 @@ MPO I() {
 double ground_state(MPS & psi, MPO H) {
 
     auto sweeps = Sweeps(5);
-    sweeps.maxm() = 10, 20, 50, 70; //gradually increase states kept
+    sweeps.maxm() = 5, 10, 20; //gradually increase states kept
     sweeps.cutoff() = cut; //desired truncation error
 
     return dmrg(psi, H, sweeps, "Quiet");
@@ -113,50 +113,97 @@ MPS conjugate_gradient_squared(MPO A, MPS b, int iter) {
 
     MPS u_q;
 
-    // Print(overlapC(r_old, r_));
+    Print(overlapC(r_old, r_));
 
     for(int i = 0; i < iter; ++i){
 
         Ap = applyMPO(A, p, args);
-        alpha = overlapC(conjugate_(r_old), r_) / overlapC(conjugate_(Ap), r_); // print
+        alpha = overlapC(conjugate_(r_old), r_) / overlapC(conjugate_(Ap), r_);
 
-        // Print(alpha);
+        //Print(alpha);
 
         //Print(overlapC(conjugate_(Ap), r_));
 
-        std::cout << alpha << std::endl;
+        // std::cout << alpha << std::endl;
 
         q = sum(u, -alpha * Ap, args);
         u_q = sum(u, q, args);
         x = sum(x, alpha * u_q, args);
         r_new = sum(r_old, -alpha * applyMPO(A, u_q, args), args);
-        beta = overlapC(conjugate_(r_new), r_) / overlapC(conjugate_(r_old), r_); // prin
+        beta = overlapC(conjugate_(r_new), r_) / overlapC(conjugate_(r_old), r_);
 
 
-        // Print(beta);
+        //Print(beta);
 
         // Print(overlapC(conjugate_(r_old), r_));
 
-        std::cout << beta << std::endl;
+        // std::cout << beta << std::endl;
 
 
         u = sum(r_new, beta * q, args);
         p = sum(u, beta * sum(q, beta * p, args), args);
         r_old = r_new;
 
+        std::cout << "\nResidue = " << sqrt(overlapC(conjugate_(r_old), r_old)) << std::endl;
     }
 
-    std::cout << "\nResidue = " << norm(r_old) << std::endl;
+
 
     return x;
 }
+
+
+MPS bicstab(MPO A, MPS b, double tol){
+
+    MPS x = b;
+    MPS r_old = sum(b, -1 * applyMPO(A, x, args));
+    MPS r_new;
+    MPS r_ = r_old;
+    MPS p = r_old;
+    MPS s;
+    MPS Ap;
+    MPS As;
+    std::complex<double> alpha;
+    std::complex<double> beta;
+    std::complex<double> w;
+    double res;
+
+    do{
+        Ap = applyMPO(A, p, args);
+        alpha = overlapC(conjugate_(r_old), r_) / overlapC(conjugate_(Ap), r_);
+        s = sum(r_old, -alpha * Ap, args);
+        As = applyMPO(A, s, args);
+        w = overlapC(conjugate_(As), s) / overlapC(conjugate_(As), As);
+        x = sum(x, sum(alpha * p, w * s, args), args);
+        r_new = sum(s, -w * As, args);
+
+        res = overlapC(conjugate_(r_new), r_new).real();
+
+        // std::cout << "Res = " << res << std::endl;
+
+        if(abs(res) <= tol * tol){
+            break;
+        }
+
+        beta = (alpha / w) * overlapC(conjugate_(r_new), r_) / overlapC(conjugate_(r_old), r_);
+        p = sum(r_new, beta * sum(p, -w * Ap, args), args);
+        r_old = r_new;
+
+
+    }while(true);
+
+
+    return x;
+}
+
 
 double spectral_function(MPS psi, MPO H, MPO (*Sx)(int), double omega, double eta, double energy, int iter, int i, int j) {
 
     const std::complex<double> z(omega + energy, eta);
     auto A = sum(z * I(), -1. * H, args);
     auto b =  applyMPO(Sx(j), psi, args);
-    auto x = conjugate_gradient_squared(A, b, iter);
+    // auto x = conjugate_gradient_squared(A, b, iter);
+    auto x = bicstab(A, b, 1E-3);
 
     std::complex<double> G = overlapC(psi, Sx(i), x);
 
@@ -169,7 +216,7 @@ int main(int argc, char* argv[]) {
     // auto psi = MPS(sites);
 
     InitState state(sites,"Up");
-//Now set every other spin to be Dn
+    //Now set every other spin to be Dn
     for(int j = 2; j <= N; j += 2)
     {
         state.set(j,"Dn");

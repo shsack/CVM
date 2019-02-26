@@ -5,8 +5,6 @@ from mpi4py import MPI
 import multiprocessing as mp
 from functools import partial
 import glob
-from decimal import Decimal
-import re
 
 
 def split_data(size, data):
@@ -30,7 +28,8 @@ rank = comm.Get_rank()  # Identification number of node
 size = comm.Get_size()  # Number of nodes
 
 # Define data
-omega = np.linspace(start=-2., stop=4., num=int(40/0.05), dtype=float)
+eta = 0.05
+omega = np.linspace(start=-1., stop=4., num=800, dtype=float)
 
 # Split the data in the zeroth node
 if rank == 0:
@@ -43,7 +42,7 @@ data_in_node = comm.scatter(data_split, root=0)
 
 # Split running of exe in each rank on CPUs
 p = mp.Pool(mp.cpu_count())
-run_exe_ = partial(run_exe, eta=0.05, num_iter=3, i=1, j=1)
+run_exe_ = partial(run_exe, eta=eta, num_iter=0, i=1, j=1)
 p.map(run_exe_, data_in_node)
 
 
@@ -57,6 +56,7 @@ filenames = sorted([(element[9:-4]) for element in glob.glob('data/*.txt')], key
 
 if rank == 0:
 
+    # Read result form files and delete intermediate files
     for filename in filenames:
 
         name = 'data/cvm_{}.txt'.format(filename)
@@ -65,7 +65,7 @@ if rank == 0:
         f.close()
         os.remove(name)
 
-        # Save data in file
+    # Save data in final file
     f = open('data/cvm_data.csv', 'w')
     out = csv.writer(f, delimiter=' ')
     out.writerows(zip(omega, correlator))

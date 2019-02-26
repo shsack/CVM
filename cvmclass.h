@@ -1,7 +1,8 @@
-//The following ifndef/define/endif pattern is called a 
-//scope guard, and prevents the C++ compiler (actually, preprocessor)
-//from including a header file more than once.
-#ifndef __MY_CLASS_H_
-#define __MY_CLASS_H_
+//
+// Created by Stefan  on 2019-02-20.
+//
 
-#endif //__MY_CLASS_H
+#ifndef CVM_CVMCLASS_H
+#define CVM_CVMCLASS_H
+
+#endif //CVM_CVMCLASS_H
