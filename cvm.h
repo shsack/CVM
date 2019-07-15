@@ -1,5 +1,7 @@
-static auto Iden=[](auto sites) {
+template<typename sites_t>
+MPO Iden(sites_t sites) {
     auto ampo = AutoMPO(sites);
+    // AutoMPO ampo(sites);
     ampo += "Id", 1;
     return MPO(ampo);
 };
@@ -57,15 +59,16 @@ MPS bicgstab(MPO A, MPS b, double tol, int max_it, Args const& args){
 }
 
 // main CVM function
-static auto spectral_function=[](MPS psi, MPO H, MPO S1, MPO S2, double omega,
+template <typename sites_t>
+double spectral_function(MPS psi, MPO H, MPO S1, MPO S2, double omega,
                                  double eta, double energy, double tol, int max_it,
-                                 int maxm, double cut, auto sites) {
+                                 int maxm, double cut, sites_t sites) {
 
     auto args = Args({"Maxm", maxm, "Cutoff", cut});
     const std::complex<double> z(omega + energy, eta);
-    auto A = sum(z * Iden(sites), -1. * H, args);
-    auto b =  applyMPO(S2, psi, args);
-    auto x = bicgstab(A, b, tol, max_it, args);
+    MPO A = sum(z * Iden(sites), -1. * H, args);
+    MPS b =  applyMPO(S2, psi, args);
+    MPS x = bicgstab(A, b, tol, max_it, args);
     std::complex<double> G = overlapC(psi, S1, x);
 
     return -G.imag() / M_PI;
