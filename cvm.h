@@ -1,7 +1,8 @@
+#include <stdexcept>
+
 template<typename sites_t>
 MPO Iden(sites_t sites) {
     auto ampo = AutoMPO(sites);
-    // AutoMPO ampo(sites);
     ampo += "Id", 1;
     return MPO(ampo);
 };
@@ -16,46 +17,33 @@ MPS conjMPS(MPS psi){
 
 
 // CVM solver
-MPS bicgstab(MPO A, MPS b, double tol, int max_it, Args const& args){
-
+MPS bicgstab(MPO const& A, MPS const& b, double const& tol, int const& max_it, Args const& args){
     MPS x = b;
     MPS r_old = sum(b, -1 * applyMPO(A, x, args));
-    MPS r_new;
     MPS r_ = r_old;
     MPS p = r_old;
-    MPS s;
-    MPS Ap;
-    MPS As;
-    std::complex<double> alpha;
-    std::complex<double> beta;
-    std::complex<double> w;
-    double res;
-    int k = 0;
+    for(int k = 0; k < max_it; ++k){
 
-    while(k < max_it){
-
-        Ap = applyMPO(A, p, args);
-        alpha = overlapC(conjMPS(r_old), r_) / overlapC(conjMPS(Ap), r_);
-        s = sum(r_old, -alpha * Ap, args);
-        As = applyMPO(A, s, args);
-        w = overlapC(conjMPS(As), s) / overlapC(conjMPS(As), As);
+        MPS Ap = applyMPO(A, p, args);
+        std::complex<double> alpha = overlapC(conjMPS(r_old), r_) / overlapC(conjMPS(Ap), r_);
+        MPS s = sum(r_old, -alpha * Ap, args);
+        MPS As = applyMPO(A, s, args);
+        std::complex<double> w = overlapC(conjMPS(As), s) / overlapC(conjMPS(As), As);
         x = sum(x, sum(alpha * p, w * s, args), args);
-        r_new = sum(s, -w * As, args);
-        res = sqrt(abs(overlapC(conjMPS(r_new), r_new).real()));
+        MPS r_new = sum(s, -w * As, args);
+        double res = sqrt(abs(overlapC(conjMPS(r_new), r_new).real()));
 
         if(res <= tol){
             std::cout << "Residue = " << res << std::endl;
-            break;
+            return x;
         }
 
-        beta = (alpha / w) * overlapC(conjMPS(r_new), r_) / overlapC(conjMPS(r_old), r_);
+        std::complex<double> beta = (alpha / w) * overlapC(conjMPS(r_new), r_) / overlapC(conjMPS(r_old), r_);
         p = sum(r_new, beta * sum(p, -w * Ap, args), args);
         r_old = r_new;
-        k++;
+    }
 
-    };
-
-    return x;
+    throw std::runtime_error("BICGSTAB didn't converge! Increase number of iterations or check the Hamiltonian.");
 }
 
 // main CVM function
