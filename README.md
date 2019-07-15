@@ -7,7 +7,5 @@ To install [ITensor](https://itensor.org/) please follow the instructions on the
 ## Running the example
 To generate calculate the spectral function of the Heisenberg model:
 
-![heisenberg](http://mathurl.com/y2f3kpgg)
-
 * Run ```make``` to compile the program.<br/>
 * Generate a plot of the spectral function by running **python main.py** followed by **python plot.py**.
