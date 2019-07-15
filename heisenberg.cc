@@ -40,8 +40,8 @@ double ground_state(MPS & psi, MPO H) {
 
 int main(int argc, char* argv[]) {
 
-    const int N = std::atoi(argv[1]);
-    const double omega = std::atof(argv[2]);
+    const double omega = std::atof(argv[1]);
+    const int N = std::atoi(argv[2]);
     const double eta = std::atof(argv[3]);
     const unsigned int max_iter = std::atoi(argv[4]);
     const double tol = std::atof(argv[5]);
