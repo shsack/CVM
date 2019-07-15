@@ -4,7 +4,7 @@ The [correction vector method](https://journals.aps.org/prb/abstract/10.1103/Phy
 ## Prerequisites
 To install [ITensor](https://itensor.org/) please follow the instructions on the [ITensor GitHub repository](https://github.com/ITensor/ITensor).
 
-## Running the example
+## Running the program
 To calculate the spectral function of the Heisenberg model:
 
 * Run ```make``` to compile the program.<br/>
