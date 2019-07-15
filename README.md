@@ -10,4 +10,4 @@ To generate calculate the spectral function of the Heisenberg model:
 * Run ```make``` to compile the program.<br/>
 * Generate a plot of the spectral function by running ```python main.py``` followed by ```python plot.py```.
 
-![spectral_func.pdf](https://github.com/shsack/CVM/files/3392368/spectral_func.pdf)
+![spectral_func](https://user-images.githubusercontent.com/45107198/61218087-1fb4d600-a709-11e9-85e8-4a102e9b1c34.png)
